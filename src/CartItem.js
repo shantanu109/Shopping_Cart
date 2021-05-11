@@ -5,16 +5,7 @@ import React from 'react';
 class CartItem extends React.Component {
     //For a class component to be a React component, we need to give it one method and that method is called 'Render'
     //State
-    constructor() {
-        //This will call the constructor of my parent class 'React'
-        super();
-        this.state = {
-            price:99999,
-            title:'Phone',
-            qty:1,
-            image: ''
-        }
-    }
+   
 
     increaseQuantity = () => {
         //console.log(this);
@@ -61,7 +52,7 @@ class CartItem extends React.Component {
     render(){
         //method returns JSX that describes the UI for the component
 
-        const {price,title,qty} = this.state
+        const {price,title,qty} = this.props.product;
 
         return (
 
