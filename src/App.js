@@ -1,6 +1,7 @@
 import React from 'react'
 import Cart from './Cart'
 import Navbar from './Navbar';
+import firebase from 'firebase'
 
 
 class App extends React.Component {
@@ -11,32 +12,63 @@ class App extends React.Component {
     super();
     this.state = {
 
-      products: [
-        {
-          price:999,
-          title:'Watch',
-          qty:1,
-          image: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=668&q=80',
-          id:1
-        },
-
-        {
-          price:99999,
-          title:'Phone',
-          qty:1,
-          image: 'https://images.unsplash.com/photo-1510878933023-e2e2e3942fb0?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1351&q=80',
-          id:2
-        },
-        {
-          price:99909,
-          title:'Laptop',
-          qty:1,
-          image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=668&q=80',
-          id:3
-        }
-
-      ]
+      products: [],
+      loading : true
   }
+  this.db = firebase.firestore();
+}
+
+componentDidMount (){
+
+  // firebase
+  //   .firestore()
+  //   .collection('products')
+  //   .get()
+  //   .then((snapshot) => {
+  //     console.log(snapshot);
+
+  //     snapshot.docs.map((doc) => {
+  //       console.log(doc.data())
+  //     });
+
+  //     const products = snapshot.docs.map((doc) => {
+  //       const data = doc.data();
+
+  //       data['id'] = doc.id
+  //       return data;
+  //     })
+
+  //     this.setState({
+  //       products,
+  //       loading : false
+  //     })
+  //   })
+
+
+  this.db
+    .collection('products')
+    // .where('price','==',3999)
+    .orderBy('price')
+    //This whole callback will be fired whenever onSnapshot is called, and onSnapshot is called whenever something changes in our products collection
+    .onSnapshot((snapshot) => {
+      console.log(snapshot);
+
+      snapshot.docs.map((doc) => {
+        console.log(doc.data())
+      });
+
+      const products = snapshot.docs.map((doc) => {
+        const data = doc.data();
+
+        data['id'] = doc.id
+        return data;
+      })
+
+      this.setState({
+        products,
+        loading : false
+      })
+    })
 }
 
 handleIncreaseQuantiy = (product) => {
@@ -45,13 +77,31 @@ handleIncreaseQuantiy = (product) => {
 
     const index = products.indexOf(product)
 
-    products[index].qty += 1
+    // products[index].qty += 1
 
-    this.setState({
-        //Change the products property
-        //products: products
-        products
-    });
+    // this.setState({
+    //     //Change the products property
+    //     //products: products
+    //     products
+    // });
+
+    //Reference of that particular product
+
+    const docRef = this.db.collection('products').doc(products[index].id);
+    
+
+    docRef
+      .update({
+        qty: products[index].qty + 1
+      })
+      .then(() => {
+        console.log('Updated successfully')
+      })
+      .catch((error) => {
+
+        console.log('Error', error);
+
+      })
 
 }
 
@@ -67,14 +117,30 @@ handleDecreaseQuantiy = (product) => {
     return;
   }
 
-  products[index].qty -= 1
+  // products[index].qty -= 1
 
-  this.setState({
+  // this.setState({
 
-        //Change the products property
-        //products: products
-    products
-  });
+  //       //Change the products property
+  //       //products: products
+  //   products
+  // });
+
+  const docRef = this.db.collection('products').doc(products[index].id);
+    
+
+  docRef
+    .update({
+      qty: products[index].qty - 1
+    })
+    .then(() => {
+      console.log('Updated successfully')
+    })
+    .catch((error) => {
+
+      console.log('Error', error);
+
+    });
 
 }
 
@@ -86,14 +152,30 @@ handleDeleteProduct = (id) => {
     //This will return me another array and this array will contain products whose id is not equal to the id that is passed
     //[{}]
 
-  const items = products.filter((item) => item.id != id);
+//   const items = products.filter((item) => item.id != id);
 
-  this.setState({
+//   this.setState({
 
 
-    products: items
+//     products: items
     
+//     });
+
+// }
+
+  const docRef = this.db.collection('products').doc(id);
+
+  docRef
+    .delete()
+    .then(() => {
+      console.log('Deleted successfully')
+    })
+    .catch((error) => {
+
+      console.log('Error', error);
+
     });
+
 
 }
 
@@ -120,25 +202,52 @@ getCartTotal = () => {
 
   products.map((product) => {
 
-    totalPrice += product.qty * product.price
+    if (product.qty>0){
+
+      totalPrice += product.qty * product.price
+    }
+    return '';
+    
   });
 
   return totalPrice;
 }
 
+addProduct = () => {
+  this.db
+    .collection('products')
+    //.add called with our product and will return me a promise
+    .add({
+      image: '',
+      price: 900,
+      qty: 3,
+      title: 'Washing Machine'
+    })
+    .then((docRef) => {
+      console.log('Product has been added', docRef)
+
+    })
+    .catch((error) => {
+      console.log('Error:', error);
+    })
+}
+
   render() {
 
-    const {products} = this.state
+    const {products,loading} = this.state
     return (
       <div className="App">
         {/* Calling the function and passing the value*/ }
         <Navbar count={this.getCartCount()} />
+        {/* <button style={{padding:20 , fontSize: 20}} onClick={this.addProduct}>Add a product</button> */}
         <Cart
           products = {products}
           onIncreaseQuantity={this.handleIncreaseQuantiy}
           onDecreaseQuantity={this.handleDecreaseQuantiy}
           onDeleteProduct = {this.handleDeleteProduct} 
         />
+
+        {loading && <h1>Loading Products...</h1>}
         <div style={{fontSize: 20 , padding:10}}>
           Total : {this.getCartTotal()}
         </div>
